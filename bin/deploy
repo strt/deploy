@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+const path = require('path');
+const meow = require('meow');
+const execa = require('execa');
+const chalk = require('chalk');
+const semver = require('semver');
+const pkg = require('../package.json');
+const webdav = require('../lib/deploy-webdav');
+
+// Set .env variables
+require('dotenv').config();
+
+// Check node version
+if (!semver.satisfies(process.version, pkg.engines.node)) {
+  console.error(`${chalk.red`error`} Required node version ${pkg.engines.node} not satisfied with installed version ${process.version} \n`);
+  process.exit(0);
+}
+
+const cli = meow(`
+  Usage
+    $ deploy <path-to-dir>
+
+  Options
+    --dir
+`);
+
+// console.log(cli.flags);
+
+webdav(cli);
+
+// execa(webdav, cli, { stdio: 'inherit' });

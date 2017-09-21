@@ -1,0 +1,38 @@
+{
+  "name": "@strt/deploy",
+  "description": "Deploy with one command",
+  "version": "1.0.0",
+  "author": "Strateg Marknadsföring AB <alexander.nanberg@strateg.se>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "bin": {
+    "deploy": "./bin/deploy"
+  },
+  "dependencies": {
+    "chalk": "^2.1.0",
+    "dotenv": "^4.0.0",
+    "execa": "^0.8.0",
+    "find-up": "^2.1.0",
+    "glob": "^7.1.2",
+    "inquirer": "^3.2.3",
+    "listr": "^0.12.0",
+    "log-symbols": "^2.0.0",
+    "meow": "^3.7.0",
+    "request": "^2.81.0",
+    "semver": "^5.4.1"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.0.0",
+    "eslint": "^4.7.0",
+    "eslint-config-airbnb-base": "^12.0.0",
+    "eslint-plugin-import": "^2.7.0",
+    "husky": "^0.14.3",
+    "lint-staged": "^4.2.1"
+  }
+}
