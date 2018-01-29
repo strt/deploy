@@ -24,6 +24,4 @@ const cli = meow(
   { description: false },
 );
 
-console.log(cli);
-
 webdav(cli);
