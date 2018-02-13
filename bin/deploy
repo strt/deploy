@@ -19,7 +19,7 @@ if (!semver.satisfies(process.version, pkg.engines.node)) {
 const cli = meow(
   `
   Usage
-    $ deploy <path-to-local-directory>
+    $ deploy <local-directory> <remote-directory>
 `,
   { description: false },
 );
