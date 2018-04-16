@@ -1,7 +1,7 @@
 {
   "name": "@strt/deploy",
   "description": "Deploy with a single command.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "Strateg Marknadsföring AB <alexander.nanberg@strateg.se>",
   "license": "MIT",
   "engines": {
@@ -9,7 +9,8 @@
   },
   "files": [
     "bin",
-    "lib"
+    "helpers",
+    "scripts"
   ],
   "bin": {
     "deploy": "./bin/deploy"
