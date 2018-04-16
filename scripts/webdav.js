@@ -5,21 +5,22 @@ const request = require('request');
 const logSymbols = require('log-symbols');
 const inquirer = require('inquirer');
 const Listr = require('listr');
-const errorHandler = require('./errorHandler');
+const errorHandler = require('../helpers/errorHandler');
 
 module.exports = function deploy(cli) {
-  if (!cli.input[0]) {
-    errorHandler('You must supply a local directory. Use --help flag for more information.');
+  const [input, remote] = cli.input;
+
+  if (!input) {
+    errorHandler('You must specify a local directory. Use --help flag for more information.');
     return;
   }
 
-  if (!cli.input[1]) {
-    errorHandler('Please specify a remote directory');
+  if (!remote) {
+    errorHandler('You must specify a remote directory. Use --help flag for more information.');
     return;
   }
 
-  const localDir = path.join(process.cwd(), cli.input[0]);
-  const remoteUrl = cli.input[1];
+  const localDir = path.join(process.cwd(), input);
 
   if (!fs.existsSync(localDir)) {
     errorHandler(`Local directory ${localDir} does not exist.`);
@@ -28,7 +29,7 @@ module.exports = function deploy(cli) {
 
   const valid = ['USERNAME', 'PASSWORD'].every((prop) => {
     if (!process.env[prop]) {
-      errorHandler(`Please add "${prop}" variable to your .env config`);
+      errorHandler(`Please add "${prop}" variable to your .env config.`);
       return false;
     }
 
@@ -50,13 +51,14 @@ module.exports = function deploy(cli) {
 
   const uploadingTasks = files.map((file) => {
     const title = file.replace(`${localDir}/`, '');
+
     return {
       title,
       task: () =>
         new Promise((resolve, reject) => {
           fs
             .createReadStream(path.resolve(file))
-            .pipe(request.put(`${remoteUrl}/${title}`, reqOptions))
+            .pipe(request.put(`${remote}/${title}`, reqOptions))
             .on('response', (res) => {
               if (res.statusCode === 403) reject(new Error('Authentication error'));
               if (res.statusCode > 400) reject(new Error('Connection error'));
@@ -75,6 +77,11 @@ module.exports = function deploy(cli) {
       task: () => new Listr(uploadingTasks, { concurrent: true }),
     },
   ]);
+
+  if (cli.flags.skipVerify) {
+    tasks.run().catch(errorHandler);
+    return;
+  }
 
   inquirer
     .prompt([

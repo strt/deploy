@@ -3,7 +3,7 @@ const meow = require('meow');
 const chalk = require('chalk');
 const semver = require('semver');
 const pkg = require('../package.json');
-const webdav = require('../lib/deploy-webdav');
+const webdav = require('../scripts/webdav');
 
 // Get .env variables
 require('dotenv').config();
@@ -21,7 +21,15 @@ const cli = meow(
   Usage
     $ deploy <local-directory> <remote-directory>
 `,
-  { description: false },
+  {
+    description: false,
+    flags: {
+      skipVerify: {
+        type: 'boolean',
+        alias: 'y',
+      },
+    },
+  },
 );
 
 webdav(cli);
