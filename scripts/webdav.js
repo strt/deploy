@@ -54,20 +54,18 @@ module.exports = function deploy(cli) {
 
     return {
       title,
-      task: () =>
-        new Promise((resolve, reject) => {
-          fs
-            .createReadStream(path.resolve(file))
-            .pipe(request.put(`${remote}/${title}`, reqOptions))
-            .on('response', (res) => {
-              if (res.statusCode === 403) reject(new Error('Authentication error'));
-              if (res.statusCode > 400) reject(new Error('Connection error'));
-              resolve();
-            })
-            .on('error', (err) => {
-              reject(new Error(err));
-            });
-        }),
+      task: () => new Promise((resolve, reject) => {
+        fs.createReadStream(path.resolve(file))
+          .pipe(request.put(`${remote}/${title}`, reqOptions))
+          .on('response', (res) => {
+            if (res.statusCode === 403) reject(new Error('Authentication error'));
+            if (res.statusCode > 400) reject(new Error('Connection error'));
+            resolve();
+          })
+          .on('error', (err) => {
+            reject(new Error(err));
+          });
+      }),
     };
   });
 
