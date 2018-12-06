@@ -1,87 +1,127 @@
 const fs = require('fs');
+const chalk = require('chalk');
 const path = require('path');
-const glob = require('glob');
-const request = require('request');
-const logSymbols = require('log-symbols');
+const globby = require('globby');
+const got = require('got');
+const ms = require('ms');
+const filesize = require('filesize');
+const ProgressBar = require('progress');
 const inquirer = require('inquirer');
-const Listr = require('listr');
-const errorHandler = require('../helpers/errorHandler');
 
-module.exports = function deploy(cli) {
-  const [input, remote] = cli.input;
+function isValid({ input, remote, localDir }) {
+  function logError(message) {
+    console.log(`${chalk.red('Error!')} ${message}`);
+  }
 
   if (!input) {
-    errorHandler('You must specify a local directory. Use --help flag for more information.');
-    return;
+    logError(
+      'You must specify a local directory. Use --help flag for more information.'
+    );
+    return false;
   }
 
   if (!remote) {
-    errorHandler('You must specify a remote directory. Use --help flag for more information.');
-    return;
+    logError(
+      'You must specify a remote directory. Use --help flag for more information.'
+    );
+    return false;
   }
-
-  const localDir = path.join(process.cwd(), input);
 
   if (!fs.existsSync(localDir)) {
-    errorHandler(`Local directory ${localDir} does not exist.`);
-    return;
+    logError(`Local directory ${localDir} does not exist.`);
+    return false;
   }
 
-  const valid = ['USERNAME', 'PASSWORD'].every((prop) => {
+  const hasEnvVars = ['USERNAME', 'PASSWORD'].every((prop) => {
     if (!process.env[prop]) {
-      errorHandler(`Please add "${prop}" variable to your .env config.`);
+      logError(`Please add "${prop}" variable to your .env config.`);
       return false;
     }
 
     return true;
   });
 
-  if (!valid) {
+  if (!hasEnvVars) {
+    return false;
+  }
+
+  return true;
+}
+
+module.exports = async function webdav(cli) {
+  const [input, remote] = cli.input;
+  const cwd = process.cwd();
+  const localDir = path.resolve(cwd, input);
+
+  if (!isValid({ input, remote, localDir })) {
     return;
   }
 
-  const files = glob.sync(`${localDir}/**/*`).filter(file => fs.statSync(file).isFile());
+  console.log(`Deploying ${chalk.bold(input)} to ${chalk.bold(remote)}`);
 
-  const reqOptions = {
-    auth: {
-      user: process.env.USERNAME,
-      pass: process.env.PASSWORD,
-    },
-  };
-
-  const uploadingTasks = files.map((file) => {
-    const title = file.replace(`${localDir}/`, '');
-
-    return {
-      title,
-      task: () => new Promise((resolve, reject) => {
-        fs.createReadStream(path.resolve(file))
-          .pipe(request.put(`${remote}/${title}`, reqOptions))
-          .on('error', (err) => {
-            reject(new Error(err));
-          })
-          .on('response', (res) => {
-            if (res.statusCode === 403) {
-              reject(new Error(`Authentication error: ${res.statusCode}`));
-            }
-            if (res.statusCode > 400) {
-              reject(new Error(`Connection error: ${res.statusCode}`));
-            }
-            resolve();
-          });
-      }),
+  async function deploy() {
+    const paths = await globby(localDir);
+    const files = paths.filter(file => fs.statSync(file).isFile());
+    const totalFileSizeBytes = files.reduce(
+      (acc, file) => acc + fs.statSync(file).size,
+      0
+    );
+    const totalFileSize = filesize(totalFileSizeBytes);
+    const reqOptions = {
+      auth: `${process.env.USERNAME}:${process.env.PASSWORD}`,
     };
-  });
+    let shouldProgressTick = true;
 
-  const tasks = new Listr([
-    {
-      title: 'Uploading files',
-      task: () => new Listr(uploadingTasks, { concurrent: true }),
-    },
-  ]);
+    const bar = new ProgressBar(
+      '> Uploading [:bar] :displayName :current/:total :percent',
+      {
+        total: files.length,
+        complete: '#',
+        width: files.length * 2,
+        clear: true,
+      }
+    );
+
+    const uploads = files.map((file) => {
+      const displayName = path.relative(cwd, file);
+      const fileName = path.relative(input, file);
+      const remoteFileName = `${remote}/${fileName}`;
+
+      return new Promise((resolve, reject) => {
+        fs.createReadStream(file).pipe(
+          got.stream
+            .put(remoteFileName, reqOptions)
+            .on('response', () => {
+              if (shouldProgressTick) {
+                bar.tick({ displayName });
+              }
+              resolve();
+            })
+            .on('error', (err, body) => {
+              reject(err, body);
+            })
+        );
+      });
+    });
+
+    Promise.all(uploads)
+      .then(() => {
+        const elapsedTime = ms(new Date() - bar.start);
+
+        console.log(
+          `> Synced ${files.length} files (${totalFileSize}) [${elapsedTime}]`
+        );
+        console.log(`> ${chalk.green('Success!')} Deployment completed`);
+      })
+      .catch((e) => {
+        shouldProgressTick = false;
+        bar.terminate();
+        console.log(`> ${chalk.red('Error!')} \n${e}`);
+      });
+  }
 
   if (cli.flags.skipVerify) {
-    tasks.run().catch(errorHandler);
+    deploy();
     return;
   }
 
@@ -90,15 +130,12 @@ module.exports = function deploy(cli) {
       {
         type: 'confirm',
         name: 'confirmation',
-        message: 'Are you sure you want to deploy?',
+        message: 'Are you sure you want to continue?',
       },
     ])
     .then((answers) => {
-      if (!answers.confirmation) return false;
-      return tasks.run().catch(errorHandler);
-    })
-    .then((success) => {
-      if (!success) return;
-      console.log(` ${logSymbols.success} Done`);
+      if (answers.confirmation) {
+        deploy();
+      }
     });
 };
