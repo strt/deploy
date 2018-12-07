@@ -60,8 +60,7 @@ module.exports = async function webdav(cli) {
   console.log(`Deploying ${chalk.bold(input)} to ${chalk.bold(remote)}`);
 
   async function deploy() {
-    const paths = await globby(localDir);
-    const files = paths.filter(file => fs.statSync(file).isFile());
+    const files = await globby(localDir);
     const totalFileSizeBytes = files.reduce(
       (acc, file) => acc + fs.statSync(file).size,
       0
@@ -77,10 +76,12 @@ module.exports = async function webdav(cli) {
       {
         total: files.length,
         complete: '#',
-        width: files.length * 2,
+        width: 64,
         clear: true,
       }
     );
+
+    bar.tick(0, { displayName: '' });
 
     const uploads = files.map((file) => {
       const displayName = path.relative(cwd, file);
