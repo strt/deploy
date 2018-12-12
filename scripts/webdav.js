@@ -72,20 +72,16 @@ module.exports = async function webdav(cli) {
     };
     let shouldProgressTick = true;
 
-    const bar = new ProgressBar(
-      '> Uploading [:bar] :displayName :current/:total :percent',
-      {
-        total: files.length,
-        complete: '#',
-        width: 64,
-        clear: true,
-      }
-    );
+    const bar = new ProgressBar('> Uploading [:bar] :current/:total :percent', {
+      total: files.length,
+      complete: '#',
+      width: 64,
+      clear: true,
+    });
 
-    bar.tick(0, { displayName: '' });
+    bar.tick(0);
 
     function upload(file) {
-      const displayName = path.relative(cwd, file);
       const fileName = path.relative(input, file);
       const remoteFileName = `${remote}/${fileName}`;
 
@@ -95,7 +91,7 @@ module.exports = async function webdav(cli) {
             .put(remoteFileName, reqOptions)
             .on('response', () => {
               if (shouldProgressTick) {
-                bar.tick({ displayName });
+                bar.tick();
               }
               resolve();
             })
