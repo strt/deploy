@@ -116,7 +116,9 @@ module.exports = async function webdav(cli) {
       .catch((e) => {
         shouldProgressTick = false;
         bar.terminate();
-        console.log(`> ${chalk.red('Error!')} \n  ${e}`);
+        console.log(
+          `> ${chalk.red('Error!')} \n  ${e} when uploading ${e.path}`
+        );
       });
   }
 
