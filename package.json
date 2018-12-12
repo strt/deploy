@@ -1,7 +1,7 @@
 {
   "name": "@strt/deploy",
   "description": "Deploy with a single command.",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "author": "Strateg Marknadsföring AB <alexander.nanberg@strateg.se>",
   "license": "MIT",
   "engines": {
