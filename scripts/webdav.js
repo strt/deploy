@@ -7,6 +7,7 @@ const ms = require('ms');
 const filesize = require('filesize');
 const ProgressBar = require('progress');
 const inquirer = require('inquirer');
+const pMap = require('p-map');
 
 function isValid({ input, remote, localDir }) {
   function logError(message) {
@@ -83,7 +84,7 @@ module.exports = async function webdav(cli) {
 
     bar.tick(0, { displayName: '' });
 
-    const uploads = files.map((file) => {
+    function upload(file) {
       const displayName = path.relative(cwd, file);
       const fileName = path.relative(input, file);
       const remoteFileName = `${remote}/${fileName}`;
@@ -103,9 +104,11 @@ module.exports = async function webdav(cli) {
             })
         );
       });
-    });
+    }
 
-    Promise.all(uploads)
+    const result = pMap(files, upload, { concurrency: 10 });
+
+    result
       .then(() => {
         const elapsedTime = ms(new Date() - bar.start);
 
@@ -117,7 +120,7 @@ module.exports = async function webdav(cli) {
       .catch((e) => {
         shouldProgressTick = false;
         bar.terminate();
-        console.log(`> ${chalk.red('Error!')} \n${e}`);
+        console.log(`> ${chalk.red('Error!')} \n  ${e}`);
       });
   }
 
