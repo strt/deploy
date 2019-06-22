@@ -40,7 +40,7 @@
     "semver": "^6.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.9.0",
+    "eslint": "^6.0.0",
     "eslint-config-strateg": "^1.1.2",
     "husky": "^2.0.0",
     "lint-staged": "^8.0.0",
