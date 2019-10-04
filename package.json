@@ -29,7 +29,7 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "dotenv": "^8.0.0",
-    "filesize": "^4.0.0",
+    "filesize": "^5.0.0",
     "globby": "^9.0.0",
     "got": "^9.3.2",
     "inquirer": "^6.0.0",
